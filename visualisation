@@ -1,0 +1,13 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("protein_folding.csv")
+
+for frame in df["Frame"].unique():
+    plt.clf()
+    subset = df[df["Frame"] == frame]
+    plt.plot(subset["X"], subset["Y"], 'o-', label=f"Frame {frame}")
+    plt.legend()
+    plt.pause(0.1)  # Pause for animation effect
+
+plt.show()
