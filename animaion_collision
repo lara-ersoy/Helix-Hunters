@@ -1,0 +1,144 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+import matplotlib.animation as animation
+from mpl_toolkits.mplot3d import Axes3D
+
+def generate_folding_with_collision(length):
+    """
+    Genereert een vouwing die expres een fout (collision) veroorzaakt
+    voordat het een correcte versie toont.
+    """
+    directions = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]
+    position = np.array([0, 0, 0])
+    path = [position]
+    
+    collision_index = random.randint(5, length - 5)  # Zorg dat de fout niet te vroeg of laat is
+
+    for i in range(length - 1):
+        new_dir = random.choice(directions)
+        new_pos = position + np.array(new_dir)
+
+        # Creëer expres een fout op het collision_index
+        if i == collision_index:
+            new_pos = path[random.randint(0, i - 1)]  # Forceer een overlap
+
+        if any(np.array_equal(new_pos, p) for p in path):
+            return np.array(path), True  # Collision detected
+
+        path.append(new_pos)
+        position = new_pos
+
+    return np.array(path), False  # No collision
+
+def generate_valid_folding(length):
+    """
+    Genereert een geldige vouwing zonder self-collision.
+    """
+    while True:
+        directions = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]
+        position = np.array([0, 0, 0])
+        path = [position]
+
+        for _ in range(length - 1):
+            new_dir = random.choice(directions)
+            new_pos = position + np.array(new_dir)
+
+            if any(np.array_equal(new_pos, p) for p in path):
+                break  # Collision, probeer opnieuw
+
+            path.append(new_pos)
+            position = new_pos
+        else:
+            return np.array(path)  # Geen collision, retourneer geldig pad
+
+def animate_folding_with_collision(length, save_as="protein_folding.gif"):
+    """
+    Maakt een 3D-animatie waarin eerst een fout (self-collision) gebeurt,
+    vervolgens toont het een melding en start opnieuw met een correcte vouwing.
+    """
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Maak eerst een foutieve vouwing
+    path, has_collision = generate_folding_with_collision(length)
+
+    # Automatische limieten instellen
+    x_min, y_min, z_min = np.min(path, axis=0)
+    x_max, y_max, z_max = np.max(path, axis=0)
+    padding = 2
+
+    ax.set_xlim([x_min - padding, x_max + padding])
+    ax.set_ylim([y_min - padding, y_max + padding])
+    ax.set_zlim([z_min - padding, z_max + padding])
+
+    ax.set_xlabel('X-as')
+    ax.set_ylabel('Y-as')
+    ax.set_zlabel('Z-as')
+    ax.set_title("3D Protein Folding Animation")
+
+    # Donkeroranje lijn voor de vouwing
+    line, = ax.plot([], [], [], color='darkorange', linewidth=3, alpha=0.9)
+    
+    # Oranje bolletjes
+    scatter = ax.scatter([], [], [], color='orange', s=100, edgecolors='black', zorder=3)
+    
+    # Collision melding (verborgen tot nodig)
+    collision_text = ax.text2D(0.5, 0.95, "", transform=ax.transAxes, fontsize=14, color="red", ha="center")
+
+    def update(frame):
+        if frame < len(path):
+            xdata = path[:frame+1, 0]
+            ydata = path[:frame+1, 1]
+            zdata = path[:frame+1, 2]
+
+            line.set_data(xdata, ydata)
+            line.set_3d_properties(zdata)
+            scatter._offsets3d = (xdata, ydata, zdata)
+
+            return line, scatter, collision_text
+
+        elif has_collision:
+            # Toon de foutmelding
+            collision_text.set_text("⚠️ Collision detected! Retrying... 🔄")
+            return line, scatter, collision_text
+
+        else:
+            # Reset de animatie en genereer een correcte vouwing
+            ax.clear()
+
+            new_path = generate_valid_folding(length)
+
+            ax.set_xlim([x_min - padding, x_max + padding])
+            ax.set_ylim([y_min - padding, y_max + padding])
+            ax.set_zlim([z_min - padding, z_max + padding])
+
+            ax.set_xlabel('X-as')
+            ax.set_ylabel('Y-as')
+            ax.set_zlabel('Z-as')
+            ax.set_title("3D Protein Folding Animation (Corrected)")
+
+            new_line, = ax.plot([], [], [], color='darkorange', linewidth=3, alpha=0.9)
+            new_scatter = ax.scatter([], [], [], color='orange', s=100, edgecolors='black', zorder=3)
+
+            new_line.set_data(new_path[:, 0], new_path[:, 1])
+            new_line.set_3d_properties(new_path[:, 2])
+            new_scatter._offsets3d = (new_path[:, 0], new_path[:, 1], new_path[:, 2])
+
+            collision_text.set_text("✅ Collision resolved! Correct folding applied.")
+            collision_text.set_color("green")
+
+            return new_line, new_scatter, collision_text
+
+    ani = animation.FuncAnimation(fig, update, frames=len(path) + 10, interval=800, repeat=False)
+
+    # Opslaan als GIF zonder FFmpeg
+    ani.save(save_as, writer="pillow", fps=2)
+
+    print(f"✅ Animation saved as: {save_as}")
+
+    plt.show()
+
+if __name__ == "__main__":
+    protein_length = 20  # Lengte van het eiwit
+    animate_folding_with_collision(protein_length, save_as="protein_folding.gif")
