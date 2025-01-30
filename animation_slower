@@ -1,0 +1,83 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+import matplotlib.animation as animation
+from mpl_toolkits.mplot3d import Axes3D
+
+def random_folding(length):
+    """
+    Generates a random folding path for a protein in 3D.
+    """
+    directions = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]
+    position = np.array([0, 0, 0])
+    path = [position]
+
+    for _ in range(length - 1):
+        new_dir = random.choice(directions)
+        new_pos = position + np.array(new_dir)
+
+        # Ensure no overlap
+        while any(np.array_equal(new_pos, p) for p in path):
+            new_dir = random.choice(directions)
+            new_pos = position + np.array(new_dir)
+
+        path.append(new_pos)
+        position = new_pos
+
+    return np.array(path)
+
+def animate_folding(path, save_as="protein_folding.gif"):
+    """
+    Creates a 3D animation of the folding process and saves it as a slower GIF.
+    """
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Automatically adjust the limits based on folding dimensions
+    x_min, y_min, z_min = np.min(path, axis=0)
+    x_max, y_max, z_max = np.max(path, axis=0)
+    padding = 2  # Extra space around the folding
+
+    ax.set_xlim([x_min - padding, x_max + padding])
+    ax.set_ylim([y_min - padding, y_max + padding])
+    ax.set_zlim([z_min - padding, z_max + padding])
+
+    ax.set_xlabel('X-axis')
+    ax.set_ylabel('Y-axis')
+    ax.set_zlabel('Z-axis')
+    ax.set_title("3D Protein Folding Animation (Slower)")
+
+    # Dark orange line for the folding
+    line, = ax.plot([], [], [], color='darkorange', linewidth=3, alpha=0.9)
+
+    # Orange spheres for amino acids
+    scatter = ax.scatter([], [], [], color='orange', s=100, edgecolors='black', zorder=3)
+
+    def update(frame):
+        xdata = path[:frame+1, 0]
+        ydata = path[:frame+1, 1]
+        zdata = path[:frame+1, 2]
+
+        line.set_data(xdata, ydata)
+        line.set_3d_properties(zdata)
+
+        scatter._offsets3d = (xdata, ydata, zdata)
+
+        return line, scatter
+
+    # Create the animation with a slower speed
+    ani = animation.FuncAnimation(fig, update, frames=len(path), interval=800, repeat=False)
+
+    # Save as a slower GIF
+    ani.save(save_as, writer="pillow", fps=2)  # Lower fps for slower animation
+
+    print(f"Slower animation saved as: {save_as}")
+
+    plt.show()
+
+if __name__ == "__main__":
+    protein_length = 20  # Protein length
+    folding_path = random_folding(protein_length)
+
+    # Save the slower animation as a GIF
+    animate_folding(folding_path, save_as="protein_folding_slow.gif")
