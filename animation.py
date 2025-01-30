@@ -1,32 +1,61 @@
 import numpy as np
-import pandas as pd
+import matplotlib.pyplot as plt
+import random
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.animation import FuncAnimation
 
-# Parameters
-num_residues = 10  # Number of amino acids in the chain
-num_frames = 50    # Number of animation frames (time steps)
+def random_folding(length):
+    """
+    Genereert een willekeurige vouwing van een eiwit in 3D.
+    """
+    directions = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]
+    position = np.array([0, 0, 0])
+    path = [position]
 
-# Initialize an unfolded protein as a straight line in 3D space
-x = np.linspace(0, num_residues-1, num_residues)
-y = np.zeros(num_residues)
-z = np.zeros(num_residues)
+    for _ in range(length - 1):
+        new_dir = random.choice(directions)
+        new_pos = position + np.array(new_dir)
+        
+        while any(np.array_equal(new_pos, p) for p in path):  # Zorg dat er geen overlap is
+            new_dir = random.choice(directions)
+            new_pos = position + np.array(new_dir)
 
-# Store all frames
-frames = []
+        path.append(new_pos)
+        position = new_pos
 
-# Simulate folding over time
-for frame in range(num_frames):
-    # Apply a random bending effect to simulate folding
-    y = np.sin(x * np.pi * (1 - frame / num_frames)) * (1 - frame / num_frames)
-    z = np.cos(x * np.pi * (1 - frame / num_frames)) * (1 - frame / num_frames)
-    
-    # Save frame data
-    for i in range(num_residues):
-        frames.append([frame, i, x[i], y[i], z[i]])
+    return np.array(path)
 
-# Convert to DataFrame
-df = pd.DataFrame(frames, columns=["Frame", "Residue", "X", "Y", "Z"])
+def animate_folding(path):
+    """
+    Maakt een 3D-animatie van het vouwproces.
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
 
-# Save to CSV
-df.to_csv("protein_folding.csv", index=False)
+    ax.set_xlim([-len(path), len(path)])
+    ax.set_ylim([-len(path), len(path)])
+    ax.set_zlim([-len(path), len(path)])
 
-print("Protein folding simulation saved to 'protein_folding.csv'")
+    ax.set_xlabel('X-as')
+    ax.set_ylabel('Y-as')
+    ax.set_zlabel('Z-as')
+    ax.set_title("3D Eiwit Vouwing Animatie")
+
+    line, = ax.plot([], [], [], 'o-', markersize=8, color='b', alpha=0.7)
+
+    def update(frame):
+        xdata = path[:frame+1, 0]
+        ydata = path[:frame+1, 1]
+        zdata = path[:frame+1, 2]
+        line.set_data(xdata, ydata)
+        line.set_3d_properties(zdata)
+        return line,
+
+    ani = FuncAnimation(fig, update, frames=len(path), interval=500, repeat=False)
+
+    plt.show()
+
+if __name__ == "__main__":
+    protein_length = 20  # Aantal aminozuren
+    folding_path = random_folding(protein_length)
+    animate_folding(folding_path)

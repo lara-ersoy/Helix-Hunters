@@ -15,13 +15,13 @@ class Grid():
     """
     # Maps direction to a change in x, y and z
     direction_map: dict[int, tuple[int, int, int]] = {
-        0 : (0, 0, 0),
-        1 : (1, 0, 0),
-        -1 : (-1, 0, 0),
-        2 : (0, 1, 0),
-        -2 : (0, -1, 0),
-        3 : (0, 0, 1),
-        -3 : (0, 0, -1)}
+    0 : (0, 0, 0),
+    1 : (1, 0, 0),
+    -1 : (-1, 0, 0),
+    2 : (0, 1, 0),
+    -2 : (0, -1, 0),
+    3 : (0, 0, 1),
+    -3 : (0, 0, -1)}
 
     def __init__(self, protein_sequence: str, amino_directions: list[int] | None) -> None:
         """
