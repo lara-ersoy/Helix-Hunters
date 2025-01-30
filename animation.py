@@ -6,28 +6,32 @@ from matplotlib.animation import FuncAnimation
 
 def random_folding(length):
     """
-    Genereert een willekeurige vouwing van een eiwit in 3D.
+    Genereert een willekeurige vouwing van een eiwit in 3D met 'H', 'C' en 'P' labels.
     """
     directions = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]
     position = np.array([0, 0, 0])
     path = [position]
 
+    # Random genereren van aminozuurtypes (H, C, P)
+    amino_types = random.choices(['H', 'C', 'P'], k=length)
+
     for _ in range(length - 1):
         new_dir = random.choice(directions)
         new_pos = position + np.array(new_dir)
-        
-        while any(np.array_equal(new_pos, p) for p in path):  # Voorkomt overlap
+
+        # Zorg ervoor dat er geen overlap is
+        while any(np.array_equal(new_pos, p) for p in path):
             new_dir = random.choice(directions)
             new_pos = position + np.array(new_dir)
 
         path.append(new_pos)
         position = new_pos
 
-    return np.array(path)
+    return np.array(path), amino_types
 
-def animate_folding(path):
+def animate_folding(path, amino_types):
     """
-    Maakt een 3D-animatie van het vouwproces met betere zoom en schaal.
+    Maakt een 3D-animatie van het vouwproces met oranje bolletjes en horizontale labels.
     """
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
@@ -46,16 +50,33 @@ def animate_folding(path):
     ax.set_zlabel('Z-as')
     ax.set_title("3D Eiwit Vouwing Animatie (Ingezoomd)")
 
-    # Verbeterde visualisatie
-    line, = ax.plot([], [], [], 'o-', markersize=10, linewidth=3, color='b', alpha=0.8)
+    # Donkeroranje lijn voor de vouwing
+    line, = ax.plot([], [], [], color='darkorange', linewidth=3, alpha=0.9)
+
+    # Oranje bolletjes voor aminozuren
+    scatter = ax.scatter([], [], [], color='orange', s=100, edgecolors='black', zorder=3)
+
+    # Labels voor aminozuren (horizontaal geplaatst)
+    labels = [ax.text(0, 0, 0, "", fontsize=12, color="black", horizontalalignment='center') for _ in range(len(path))]
 
     def update(frame):
         xdata = path[:frame+1, 0]
         ydata = path[:frame+1, 1]
         zdata = path[:frame+1, 2]
+
         line.set_data(xdata, ydata)
         line.set_3d_properties(zdata)
-        return line,
+
+        # Update bolletjes
+        scatter._offsets3d = (xdata, ydata, zdata)
+
+        # Labels toevoegen aan elk bolletje (nu horizontaal gecentreerd)
+        for i in range(frame+1):
+            labels[i].set_position((xdata[i], ydata[i]))
+            labels[i].set_3d_properties(zdata[i])
+            labels[i].set_text(amino_types[i])  # Zet 'H', 'C' of 'P' als label
+
+        return line, scatter, *labels
 
     ani = FuncAnimation(fig, update, frames=len(path), interval=400, repeat=False)
 
@@ -63,5 +84,5 @@ def animate_folding(path):
 
 if __name__ == "__main__":
     protein_length = 20  # Lengte van het eiwit
-    folding_path = random_folding(protein_length)
-    animate_folding(folding_path)
+    folding_path, amino_types = random_folding(protein_length)
+    animate_folding(folding_path, amino_types)
