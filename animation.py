@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.animation import FuncAnimation
 
 def random_folding(length):
     """
@@ -29,9 +29,9 @@ def random_folding(length):
 
     return np.array(path), amino_types
 
-def animate_folding(path, amino_types):
+def animate_folding(path, amino_types, save_as="protein_folding.gif"):
     """
-    Maakt een 3D-animatie van het vouwproces met oranje bolletjes en horizontale labels.
+    Maakt een 3D-animatie van het vouwproces en slaat deze op als een GIF zonder FFmpeg.
     """
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
@@ -48,7 +48,7 @@ def animate_folding(path, amino_types):
     ax.set_xlabel('X-as')
     ax.set_ylabel('Y-as')
     ax.set_zlabel('Z-as')
-    ax.set_title("3D Eiwit Vouwing Animatie (Ingezoomd)")
+    ax.set_title("3D Eiwit Vouwing Animatie")
 
     # Donkeroranje lijn voor de vouwing
     line, = ax.plot([], [], [], color='darkorange', linewidth=3, alpha=0.9)
@@ -67,22 +67,27 @@ def animate_folding(path, amino_types):
         line.set_data(xdata, ydata)
         line.set_3d_properties(zdata)
 
-        # Update bolletjes
         scatter._offsets3d = (xdata, ydata, zdata)
 
-        # Labels toevoegen aan elk bolletje (nu horizontaal gecentreerd)
         for i in range(frame+1):
             labels[i].set_position((xdata[i], ydata[i]))
             labels[i].set_3d_properties(zdata[i])
-            labels[i].set_text(amino_types[i])  # Zet 'H', 'C' of 'P' als label
+            labels[i].set_text(amino_types[i])
 
         return line, scatter, *labels
 
-    ani = FuncAnimation(fig, update, frames=len(path), interval=400, repeat=False)
+    ani = animation.FuncAnimation(fig, update, frames=len(path), interval=400, repeat=False)
+
+    # Opslaan als GIF zonder FFmpeg
+    ani.save(save_as, writer="pillow", fps=5)
+
+    print(f"✅ Animatie opgeslagen als: {save_as}")
 
     plt.show()
 
 if __name__ == "__main__":
     protein_length = 20  # Lengte van het eiwit
     folding_path, amino_types = random_folding(protein_length)
-    animate_folding(folding_path, amino_types)
+
+    # Opslaan als GIF zonder FFmpeg
+    animate_folding(folding_path, amino_types, save_as="protein_folding.gif")
